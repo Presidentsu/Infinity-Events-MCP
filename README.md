@@ -1,6 +1,6 @@
 # Infinity Events MCP Server
 
-A Model Context Protocol (MCP) server that integrates Check Point Infinity Events API with Claude Desktop, enabling natural language queries for security event logs analysis.
+A Model Context Protocol (MCP) server that integrates Check Point Infinity Events API with Claude Desktop, enabling natural language queries for security event logs analysis and creating custom reports.
 
 ## Features
 
