@@ -37,8 +37,8 @@ sudo yum install python3 python3-pip
 
 1. **Clone or Download**:
 ```bash
-git clone https://github.com/your-username/infinity-events-mcp-server.git
-cd infinity-events-mcp-server
+git clone https://github.com/your-username/infinity-events-mcp.git
+cd infinity-events-mcp
 ```
 
 2. **Install Dependencies**:
@@ -48,16 +48,16 @@ pip install -r requirements.txt
 
 3. **Test the Server**:
 ```bash
-python infinity_events_mcp_server.py
+python infinity_mcp.py
 ```
    - If it starts without errors, press `Ctrl+C` to stop
 
 ## Step 3: Get Check Point API Credentials
 
 1. **Log into Infinity Portal**:
-   - Global: https://portal.checkpoint.com
-   - India: https://portal.checkpoint.com
-   - Australia: https://portal.checkpoint.com
+   - EU: https://portal.checkpoint.com
+   - India: https://in.portal.checkpoint.com
+   - Australia: https://au.portal.checkpoint.com
 
 2. **Navigate to API Keys**:
    - Go to **GLOBAL SETTINGS** → **API Keys**
@@ -65,8 +65,8 @@ python infinity_events_mcp_server.py
 3. **Create New API Key**:
    - Click **"Add API Key"**
    - **Name**: `Infinity Events MCP Server`
-   - **Service**: Select **"Horizon Logs & Events"**
-   - **Expiration**: Set as needed (recommend 1 year)
+   - **Service**: Select **"Logs as a Service"**
+   - **Expiration**: Set as needed (recommend 1 weel)
    - Click **"Generate"**
 
 4. **Save Credentials**:
@@ -101,15 +101,15 @@ python infinity_events_mcp_server.py
   "mcpServers": {
     "infinity-events": {
       "command": "python",
-      "args": ["C:\\path\\to\\infinity_events_mcp_server.py"]
+      "args": ["C:\\path\\to\\infinity_mcp.py"]
     }
   }
 }
 ```
 
 2. **Update the path**:
-   - **Windows**: `"C:\\Users\\YourName\\infinity-events-mcp-server\\infinity_events_mcp_server.py"`
-   - **macOS/Linux**: `"/Users/YourName/infinity-events-mcp-server/infinity_events_mcp_server.py"`
+   - **Windows**: `"C:\\Users\\YourName\\infinity-events-mcp\\infinity_mcp.py"`
+   - **macOS/Linux**: `"/Users/YourName/infinity-events-mcp/infinity_mcp.py"`
 
 ### Full Configuration Example
 
@@ -120,13 +120,15 @@ python infinity_events_mcp_server.py
       "command": "python",
       "args": ["/full/path/to/infinity_events_mcp_server.py"],
       "env": {
-        "PYTHONPATH": "/full/path/to/infinity-events-mcp-server"
-      }
+        "CHECKPOINT_CLIENT_ID": "your_client_ID_here", 
+        "CHECKPOINT_ACCESS_KEY": "your_Secret_Key_here", 
+        "CHECKPOINT_BASE_URL": "https://cloudinfra-gw.portal.checkpoint.com"
+	  }
     }
   }
 }
 ```
-
+**Reminder** - Here the config base url is pointed to EU, see which gateway is in use your organization, if its in it will be "cloudinfra-gw.in.portal.checkpoint.com".
 ## Step 5: Test the Integration
 
 1. **Restart Claude Desktop** completely
@@ -138,11 +140,16 @@ python infinity_events_mcp_server.py
 3. **Test Query**:
 ```
 Use the infinity events tool to search for "critical events on Harmony SASE" in the "last 24 hours"
-
-Base URL: https://cloudinfra-gw.portal.checkpoint.com
-Client ID: [your client ID]
-Access Key: [your secret key]
 ```
+OR
+```
+Use the infinity events tool to search for all the critical events in the last 24 hours
+```
+The tool will automatically:
+- Use credentials from your configuration securely
+- Parse your natural language query  
+- Generate comprehensive cybersecurity reports
+- Provide Claude with rich metadata for visualizations
 
 ## Troubleshooting
 
@@ -234,7 +241,7 @@ ls -la /path/to/infinity_events_mcp_server.py
 - Base URL: `https://cloudinfra-gw.ap.portal.checkpoint.com`
 - Portal: https://portal.checkpoint.com (same login)
 
-### Global Region
+### EU Region
 - Base URL: `https://cloudinfra-gw.portal.checkpoint.com`
 - Portal: https://portal.checkpoint.com
 
@@ -251,14 +258,13 @@ ls -la /path/to/infinity_events_mcp_server.py
    - Monitor API usage
 
 3. **Access Control**:
-   - Limit API key permissions
    - Use separate keys for different environments
    - Monitor API key usage in Infinity Portal
 
 ## Next Steps
 
 After successful setup:
-1. Try the sample queries from `examples/sample_queries.md`
+1. Try the sample queries from `sample_queries.md`
 2. Experiment with different timeframes and products
 3. Ask Claude to create visualizations and reports
 4. Set up local file saving for important investigations
