@@ -21,6 +21,8 @@ A Model Context Protocol (MCP) server that integrates Check Point Infinity Event
 - Harmony Browse
 - Quantum Smart-1 Cloud
 - Quantum Spark Management
+- CloudGuard WAF
+- CGNS
 
 ## Installation
 
