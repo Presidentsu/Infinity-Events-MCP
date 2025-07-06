@@ -165,9 +165,9 @@ infinity-events-mcp-server/
 ├── infinity_mcp.py    # Main MCP server
 ├── requirements.txt                 # Python dependencies
 ├── README.md                       # This file
-├── LICENSE                         # MIT License
 └── examples/                       # Usage examples
     └── sample_queries.md           # Sample query examples
+    └── setup_guide.md              # Detailed Setup Guide.
 ```
 
 ### Dependencies
