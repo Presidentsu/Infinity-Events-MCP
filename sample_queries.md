@@ -1,172 +1,230 @@
 # Sample Queries for Infinity Events MCP Server
 
-This document provides examples of natural language queries you can use with the Infinity Events MCP Server.
+This document provides examples of natural language queries you can use with the Infinity Events MCP Server for comprehensive security analysis and automated report generation.
 
-## Security Analysis Queries
+## Universal Security Analysis
 
-### Critical Events
+### All Security Events
 ```
-Query: "Show me all critical security events on Harmony SASE"
+Query: "Show all security events"
 Timeframe: "last 24 hours"
-Result: Gets all critical severity events from Harmony SASE in the last day
+Result: Gets all security events across all products with comprehensive analysis
+```
+
+### Product-Specific All Events
+```
+Query: "All security events on Harmony SASE"
+Timeframe: "last 7 days"
+Result: Gets all events from Harmony SASE with automated threat intelligence
+```
+
+### Multi-Product Overview
+```
+Query: "Security events from all products"
+Timeframe: "last 30 days"
+Result: Comprehensive overview across all products
+```
+
+## Severity-Based Analysis
+
+### Critical Events Focus
+```
+Query: "Show critical security events on Harmony Endpoint"
+Timeframe: "last 48 hours"
+Result: Gets critical events with incident response playbook generation
 ```
 
 ### Multi-Severity Analysis
 ```
-Query: "Generate report of high and critical events on Harmony Endpoint"
+Query: "High and critical events across all products"
 Timeframe: "last 7 days"
-Result: Gets both high and critical severity events from Harmony Endpoint over the past week
-```
-
-### Product-Specific Investigations
-```
-Query: "Show security incidents on Quantum Smart-1 Cloud"
-Timeframe: "last 30 days"
-Result: Gets all security events from Quantum Smart-1 Cloud in the last month
+Result: Executive dashboard with risk scoring and priority matrix
 ```
 
 ## Network Investigation Queries
 
 ### Source IP Analysis
 ```
-Query: "Show events from source 192.168.1.100 on Harmony Connect"
-Timeframe: "last 48 hours"
-Result: Gets all events originating from specific IP address
+Query: "Show events from source 192.168.1.100"
+Timeframe: "last 24 hours"
+Result: Network flow analysis with IOC extraction and geolocation
 ```
 
-### Destination IP Tracking
+### Destination Tracking
 ```
-Query: "Find traffic to destination 10.0.0.1 with critical severity"
+Query: "Find traffic to destination 10.0.0.1"
 Timeframe: "last 12 hours"
-Result: Gets critical events targeting specific destination IP
+Result: Target analysis with attack pattern identification
 ```
 
-### Combined IP and Severity
+### Network Overview
 ```
-Query: "Show high severity events from source 172.16.0.0/16 on Harmony Browse"
+Query: "All network security events"
 Timeframe: "last 6 hours"
-Result: Gets high severity events from specific IP range
+Result: Network topology analysis with flow diagrams
 ```
 
-## Threat Hunting Queries
+## Product-Specific Deep Dives
 
 ### Email Security
 ```
-Query: "Show critical email threats on Harmony Email & Collaboration"
+Query: "All security events on Harmony Email & Collaboration"
 Timeframe: "last 3 days"
-Result: Gets critical email security events
-```
-
-### Mobile Security
-```
-Query: "Find mobile security incidents with high severity on Harmony Mobile"
-Timeframe: "last 1 week"
-Result: Gets high severity mobile security events
+Result: Email threat landscape with phishing and malware analysis
 ```
 
 ### Endpoint Protection
 ```
-Query: "Show malware detection events on Harmony Endpoint"
-Timeframe: "last 24 hours"
-Result: Gets malware-related security events from endpoints
+Query: "Security events on Harmony Endpoint"
+Timeframe: "last 1 week"
+Result: Endpoint security posture with MITRE ATT&CK mapping
 ```
 
-## Time-Based Analysis
-
-### Recent Activity
+### Cloud Security
 ```
-Query: "Show all security events on Quantum Spark Management"
-Timeframe: "last 2 hours"
-Result: Gets very recent security activity
-```
-
-### Weekly Reports
-```
-Query: "Generate weekly security report for Harmony SASE with critical events"
-Timeframe: "last 7 days"
-Result: Gets comprehensive weekly critical events report
-```
-
-### Monthly Trends
-```
-Query: "Show security trends on all Harmony products"
+Query: "All events on Quantum Smart-1 Cloud"
 Timeframe: "last 30 days"
-Result: Gets monthly security event trends across products
+Result: Cloud security assessment with compliance mapping
 ```
 
-## Advanced Filtering Examples
+## Time-Based Investigations
 
-### Combined Filters
+### Real-Time Monitoring
 ```
-Query: "Show critical events from source 192.168.1.0/24 on Harmony SASE"
-Timeframe: "last 12 hours"
-Result: Combines IP range filtering with severity and product filtering
+Query: "All security events"
+Timeframe: "last 2 hours"
+Result: Real-time threat monitoring with immediate response recommendations
 ```
 
-### Multi-Product Analysis
+### Weekly Security Review
 ```
-Query: "Compare security events between Harmony Connect and Harmony Endpoint"
+Query: "Security events across all products"
+Timeframe: "last 7 days"
+Result: Weekly security report with trend analysis and executive summary
+```
+
+### Monthly Compliance Report
+```
+Query: "All security events"
+Timeframe: "last 30 days"
+Result: Comprehensive compliance report with regulatory mapping
+```
+
+## Advanced Analysis Examples
+
+### Threat Hunting
+```
+Query: "High severity events with suspicious source IPs"
 Timeframe: "last 24 hours"
-Result: Gets events from multiple products for comparison
+Result: Threat hunting report with IOC correlation and attribution
+```
+
+### Incident Investigation
+```
+Query: "Critical events on Harmony SASE"
+Timeframe: "last 6 hours"
+Result: Incident timeline with kill chain analysis and containment steps
+```
+
+### Baseline Analysis
+```
+Query: "All security events"
+Timeframe: "last 7 days"
+Result: Security baseline establishment with normal vs. anomalous activity
 ```
 
 ## Report Generation Prompts
 
-After getting the logs, you can ask Claude to generate various reports:
+After getting the logs, Claude automatically generates reports. You can also request specific analyses:
 
-### Executive Summary
+### Executive Briefing
 ```
-"Create an executive summary of the security events focusing on:
-- Total number of events by severity
-- Top threat types
-- Affected systems
-- Recommended actions"
-```
-
-### Technical Analysis
-```
-"Generate a technical analysis report including:
-- Event timeline visualization
-- Source IP analysis
-- Attack pattern identification
-- Detailed remediation steps"
+"Create an executive security briefing focusing on:
+- Business impact assessment
+- Risk scoring and trends
+- Resource allocation recommendations
+- Strategic security improvements"
 ```
 
-### Compliance Report
+### Technical Deep Dive
 ```
-"Create a compliance-focused report showing:
-- Security event categories
-- Response times
-- Coverage across products
-- Audit trail summary"
+"Generate a technical analysis including:
+- MITRE ATT&CK technique breakdown
+- IOC extraction and correlation
+- Attack timeline reconstruction  
+- Detailed remediation procedures"
 ```
 
-## Tips for Effective Queries
+### Compliance Assessment
+```
+"Produce a compliance report covering:
+- SOX, GDPR, HIPAA, PCI-DSS requirements
+- Control effectiveness measurement
+- Audit trail completeness
+- Regulatory risk assessment"
+```
 
-1. **Be Specific**: Include the exact product name (e.g., "Harmony SASE" not just "SASE")
+### Incident Response Plan
+```
+"Create an incident response plan with:
+- Priority-based event classification
+- Response team assignments
+- Escalation procedures
+- Communication templates"
+```
 
-2. **Use Clear Timeframes**: Be explicit about time periods ("last 24 hours" vs "yesterday")
+## Visualization Requests
 
-3. **Combine Filters**: You can combine severity, IPs, and products in one query
+### Risk Visualization
+```
+"Create interactive visualizations showing:
+- Risk heatmap by product and severity
+- Timeline of security events with clustering
+- Network flow diagram with threat indicators
+- MITRE ATT&CK coverage matrix"
+```
 
-4. **Follow Up**: After getting logs, ask Claude for specific analysis or visualizations
+### Executive Dashboard
+```
+"Build an executive dashboard featuring:
+- Real-time security metrics
+- Trend analysis charts
+- KPI scorecards
+- Actionable recommendations"
+```
 
-5. **Save Important Results**: Use `save_locally: true` for critical investigations
+## Tips for Effective Analysis
 
-## Regional Endpoints
+1. **Start Broad**: Begin with "all security events" to understand the overall landscape
 
-Remember to use the correct base URL for your region:
+2. **Use Natural Language**: The system understands conversational queries
 
-- **Global**: `https://cloudinfra-gw.portal.checkpoint.com`
-- **India**: `https://cloudinfra-gw.in.portal.checkpoint.com`  
-- **Australia**: `https://cloudinfra-gw.ap.portal.checkpoint.com`
+3. **Leverage Timeframes**: Adjust time periods based on investigation needs
+
+4. **Combine with Claude**: Ask for specific report formats and visualizations
+
+5. **Save Critical Data**: Use `save_locally: true` for important investigations
+
+6. **Follow Up**: Use the generated metadata to ask targeted follow-up questions
+
+## Automated Report Features
+
+The system automatically provides:
+
+- **Executive Summaries** with business impact
+- **Threat Intelligence** with IOC extraction
+- **Incident Response** playbooks
+- **Compliance Mapping** to regulations
+- **Visualization Suggestions** for Claude
+- **MITRE ATT&CK** technique identification
+- **Risk Scoring** and prioritization
 
 ## Query Troubleshooting
 
 If queries don't return expected results:
 
-1. Check product name spelling
-2. Verify timeframe is reasonable
-3. Ensure API credentials are correct
-4. Check if account filtering is needed
-5. Try broader queries first, then narrow down
+1. Check product name spelling in logs
+2. Verify timeframe is reasonable for data volume
+3. Ensure API credentials are correctly configured
+4. Try broader queries first, then narrow down
+5. Use the `check_credentials` tool to verify connectivity
