@@ -5,7 +5,7 @@ A Model Context Protocol (MCP) server that integrates Check Point Infinity Event
 ## Features
 
 - 🔍 **Natural Language Queries**: Search logs using plain English (e.g., "Show critical events on Harmony SASE")
-- 🌍 **Multi-Region Support**: Works with global and regional endpoints (.in.portal.checkpoint.com)
+- 🌍 **Multi-Region Support**: Works with EU-US and regional endpoints (.in.portal.checkpoint.com)
 - 📊 **AI-Powered Analysis**: Stream results directly to Claude for interactive reports and visualizations
 - 💾 **Flexible Output**: Save locally or stream to Claude for analysis
 - 🔄 **Smart Pagination**: Handles large datasets with automatic pagination (pageLimit=100)
@@ -14,7 +14,7 @@ A Model Context Protocol (MCP) server that integrates Check Point Infinity Event
 
 ## Supported Check Point Products
 
-- Harmony Connect
+- Harmony SASE
 - Harmony Endpoint  
 - Harmony Mobile
 - Harmony Email & Collaboration
@@ -28,14 +28,14 @@ A Model Context Protocol (MCP) server that integrates Check Point Infinity Event
 
 - Python 3.7+
 - Claude Desktop
-- Check Point Infinity Portal API credentials
+- Check Point Infinity Events (Log-as-a-service) API credentials
 
 ### Setup
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/your-username/infinity-events-mcp-server.git
-cd infinity-events-mcp-server
+git clone https://github.com/presidentSU/infinity-events-mcp.git
+cd infinity-events-mcp
 ```
 
 2. Install dependencies:
@@ -53,7 +53,7 @@ pip install -r requirements.txt
   "mcpServers": {
     "infinity-events": {
       "command": "python",
-      "args": ["path/to/infinity_events_mcp_server.py"]
+      "args": ["path/to/infinity_mcp.py"]
     }
   }
 }
@@ -97,11 +97,15 @@ pip install -r requirements.txt
 - **accounts**: Array of account IDs to filter (optional)
 - **save_locally**: Boolean to save results to local JSON file (default: false)
 
+#### Real world Example that works
+- Provide me all the critical security events from Harmony SASE in the last 24 hrs.
+- My user with email ID: <user@email.com>, can you generate a detailed report on his activity from H-SASE in the last 15 days.
+
 ## API Credentials Setup
 
 1. Log into [Infinity Portal](https://portal.checkpoint.com)
 2. Navigate to **GLOBAL SETTINGS > API Keys**
-3. Create a new API Key with **Service** set to **Horizon Logs & Events**
+3. Create a new API Key with **Service** set to **Logs as a Service**
 4. Note your Client ID and Secret Key
 
 ## Query Language
@@ -158,7 +162,7 @@ The server provides detailed error messages for common issues:
 ### Project Structure
 ```
 infinity-events-mcp-server/
-├── infinity_events_mcp_server.py    # Main MCP server
+├── infinity_mcp.py    # Main MCP server
 ├── requirements.txt                 # Python dependencies
 ├── README.md                       # This file
 ├── LICENSE                         # MIT License
@@ -193,27 +197,21 @@ The server automatically handles these limits and notifies users when limits are
 
 ## Security Considerations
 
-- API credentials are passed as parameters and not stored
-- Authentication tokens expire after 30 minutes for security
+- API credentials are passed as parameters during the initial prompt to Claude/Cursor and not part of the configuration.
 - All API communications use HTTPS
 - Local file saves are optional and controlled by user
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Support
 
-For issues and questions:
-1. Check the [Issues](https://github.com/your-username/infinity-events-mcp-server/issues) page
-2. Review the [Check Point API Documentation](https://sc1.checkpoint.com/documents/latest/APIs/index.html)
-3. Visit [MCP Documentation](https://modelcontextprotocol.io/docs/) for MCP-specific questions
+For issues and documentations:
+1. Review the [Check Point API Documentation](https://sc1.checkpoint.com/documents/latest/APIs/index.html)
+2. Visit [MCP Documentation](https://modelcontextprotocol.io/docs/) for MCP-specific questions
 
 ## Acknowledgments
 
 - Check Point Software Technologies for the Infinity Events API
 - Anthropic for the Model Context Protocol
-- Claude Desktop integration team
+- Made with <3 by leveraging Claude
 
 ---
 
