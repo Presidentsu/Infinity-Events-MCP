@@ -2,6 +2,7 @@
 """
 Infinity Events MCP Server
 Integrates Check Point Infinity Events API with Claude Desktop
+Credentials loaded from environment variables for security
 """
 
 import asyncio
@@ -10,6 +11,7 @@ import sys
 import requests
 import time
 import re
+import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
@@ -20,8 +22,18 @@ class InfinityEventsMCPServer:
         self.name = name
         self.initialized = False
         self.auth_token = None
-        self.base_url = None
         self.token_expires_at = None
+        
+        # Load credentials from environment variables
+        self.client_id = os.getenv('CHECKPOINT_CLIENT_ID')
+        self.access_key = os.getenv('CHECKPOINT_ACCESS_KEY')
+        self.base_url = os.getenv('CHECKPOINT_BASE_URL', 'https://cloudinfra-gw.portal.checkpoint.com')
+        
+        # Validate required credentials
+        if not self.client_id or not self.access_key:
+            print("ERROR: Missing required environment variables:", file=sys.stderr)
+            print("Required: CHECKPOINT_CLIENT_ID, CHECKPOINT_ACCESS_KEY", file=sys.stderr)
+            print("Optional: CHECKPOINT_BASE_URL (defaults to global endpoint)", file=sys.stderr)
 
     def parse_timeframe(self, timeframe_text: str) -> Dict[str, str]:
         """Parse natural language timeframe to start/end times."""
@@ -83,7 +95,14 @@ class InfinityEventsMCPServer:
                 app_name = match.group(0).replace(' ', ' ')
                 break
         
-        # Build filter components
+        # Check if user wants all security events (no specific filtering)
+        if any(phrase in query_lower for phrase in ['all security events', 'all events', 'security events']):
+            if app_name:
+                return app_name, f'ci_app_name:"{app_name}"'
+            else:
+                return "all_products", "*"
+        
+        # Build filter components for specific queries
         filter_parts = []
         
         # Add app name filter
@@ -117,14 +136,20 @@ class InfinityEventsMCPServer:
         
         return app_name or "unknown", filter_string
 
-    async def authenticate(self, base_url: str, client_id: str, access_key: str) -> Dict[str, Any]:
-        """Authenticate with Infinity Events API."""
+    async def authenticate(self) -> Dict[str, Any]:
+        """Authenticate with Infinity Events API using environment credentials."""
+        if not self.client_id or not self.access_key:
+            return {
+                "success": False, 
+                "error": "Missing credentials. Please set CHECKPOINT_CLIENT_ID and CHECKPOINT_ACCESS_KEY environment variables."
+            }
+        
         try:
-            auth_url = urljoin(base_url, "/auth/external")
+            auth_url = urljoin(self.base_url, "/auth/external")
             
             payload = {
-                "clientId": client_id,
-                "accessKey": access_key
+                "clientId": self.client_id,
+                "accessKey": self.access_key
             }
             
             response = requests.post(
@@ -138,12 +163,11 @@ class InfinityEventsMCPServer:
                 data = response.json()
                 if data.get("success"):
                     self.auth_token = data["data"]["token"]
-                    self.base_url = base_url
                     # Token expires in 30 minutes
                     self.token_expires_at = time.time() + (30 * 60)
                     return {"success": True, "message": "Authentication successful"}
                 else:
-                    return {"success": False, "error": "Authentication failed"}
+                    return {"success": False, "error": "Authentication failed - invalid credentials"}
             else:
                 return {"success": False, "error": f"HTTP {response.status_code}: {response.text}"}
                 
@@ -154,7 +178,9 @@ class InfinityEventsMCPServer:
                          accounts: Optional[List[str]] = None) -> Dict[str, Any]:
         """Initiate log search query."""
         if not self.auth_token or time.time() > self.token_expires_at:
-            return {"success": False, "error": "Authentication token expired or missing"}
+            auth_result = await self.authenticate()
+            if not auth_result["success"]:
+                return auth_result
         
         try:
             search_url = urljoin(self.base_url, "/app/laas-logs-api/api/logs_query")
@@ -258,28 +284,23 @@ class InfinityEventsMCPServer:
         except Exception as e:
             return {"success": False, "error": f"Retrieval error: {str(e)}"}
 
-    async def get_all_logs(self, query: str, timeframe_text: str, base_url: str,
-                          client_id: str, access_key: str, accounts: Optional[List[str]] = None,
+    async def get_all_logs(self, query: str, timeframe_text: str, 
+                          accounts: Optional[List[str]] = None,
                           save_locally: bool = False) -> Dict[str, Any]:
         """Complete workflow to get all logs matching the query."""
         
-        # Step 1: Authenticate
-        auth_result = await self.authenticate(base_url, client_id, access_key)
-        if not auth_result["success"]:
-            return auth_result
-        
-        # Step 2: Parse query and timeframe
+        # Step 1: Parse query and timeframe
         app_name, filter_str = self.parse_query_to_filter(query)
         timeframe = self.parse_timeframe(timeframe_text)
         
-        # Step 3: Initiate search
+        # Step 2: Initiate search (authentication handled automatically)
         search_result = await self.search_logs(filter_str, timeframe, accounts)
         if not search_result["success"]:
             return search_result
         
         task_id = search_result["taskId"]
         
-        # Step 4: Wait for completion and get page tokens
+        # Step 3: Wait for completion and get page tokens
         max_attempts = 30
         attempt = 0
         
@@ -304,7 +325,7 @@ class InfinityEventsMCPServer:
         if attempt >= max_attempts:
             return {"success": False, "error": "Task timed out"}
         
-        # Step 5: Retrieve all pages
+        # Step 4: Retrieve all pages
         all_records = []
         total_records = 0
         
@@ -327,7 +348,7 @@ class InfinityEventsMCPServer:
                 total_records += retrieve_result["recordsCount"]
                 next_token = retrieve_result.get("nextPageToken")
         
-        # Step 6: Save locally if requested
+        # Step 5: Save locally if requested
         if save_locally:
             filename = f"infinity_events_{int(time.time())}.json"
             try:
@@ -351,18 +372,214 @@ class InfinityEventsMCPServer:
             except Exception as e:
                 return {"success": False, "error": f"Failed to save file: {str(e)}"}
         
-        return {
-            "success": True,
-            "message": f"Retrieved {total_records} records",
-            "total_records": total_records,
-            "records": all_records,
-            "query_info": {
-                "original_query": query,
-                "timeframe": timeframe_text,
-                "app_name": app_name,
-                "filter": filter_str
+    def generate_report_metadata(self, records: List[Dict], query_info: Dict) -> Dict[str, Any]:
+        """Generate cybersecurity report metadata from log records."""
+        if not records:
+            return {"report_suggestions": []}
+        
+        # Analyze the records
+        severity_counts = {}
+        product_counts = {}
+        source_ips = set()
+        dest_ips = set()
+        event_types = set()
+        attack_techniques = set()
+        timeline_data = []
+        
+        for record in records:
+            # Severity analysis
+            severity = record.get('severity', 'Unknown')
+            severity_counts[severity] = severity_counts.get(severity, 0) + 1
+            
+            # Product analysis
+            product = record.get('ci_app_name', record.get('product', 'Unknown'))
+            product_counts[product] = product_counts.get(product, 0) + 1
+            
+            # Network analysis
+            if record.get('src'):
+                source_ips.add(record['src'])
+            if record.get('dst'):
+                dest_ips.add(record['dst'])
+            
+            # Event type analysis
+            if record.get('action'):
+                event_types.add(record['action'])
+            if record.get('rule_name'):
+                event_types.add(record['rule_name'])
+            
+            # Timeline data
+            if record.get('time'):
+                timeline_data.append({
+                    'timestamp': record['time'],
+                    'severity': severity,
+                    'product': product,
+                    'event': record.get('action', 'Event')
+                })
+            
+            # MITRE ATT&CK techniques (common patterns)
+            event_text = str(record).lower()
+            if 'lateral movement' in event_text or 'privilege escalation' in event_text:
+                attack_techniques.add('Lateral Movement')
+            if 'data exfiltration' in event_text or 'data transfer' in event_text:
+                attack_techniques.add('Exfiltration')
+            if 'malware' in event_text or 'virus' in event_text:
+                attack_techniques.add('Malware Execution')
+            if 'phishing' in event_text or 'social engineering' in event_text:
+                attack_techniques.add('Initial Access')
+        
+        # Generate report metadata
+        total_events = len(records)
+        critical_events = severity_counts.get('Critical', 0)
+        high_events = severity_counts.get('High', 0)
+        
+        report_metadata = {
+            "executive_dashboard": {
+                "total_events": total_events,
+                "critical_count": critical_events,
+                "high_count": high_events,
+                "risk_score": min(100, (critical_events * 10 + high_events * 5)),
+                "severity_distribution": severity_counts,
+                "top_products": dict(sorted(product_counts.items(), key=lambda x: x[1], reverse=True)[:5]),
+                "timeframe": query_info.get('timeframe', 'Unknown'),
+                "chart_suggestions": [
+                    "Pie chart of severity distribution",
+                    "Bar chart of events by product",
+                    "Timeline of critical/high events"
+                ]
+            },
+            
+            "threat_intelligence": {
+                "unique_source_ips": len(source_ips),
+                "unique_dest_ips": len(dest_ips),
+                "top_source_ips": list(source_ips)[:10],
+                "top_dest_ips": list(dest_ips)[:10],
+                "attack_techniques": list(attack_techniques),
+                "event_types": list(event_types)[:10],
+                "ioc_indicators": {
+                    "suspicious_ips": [ip for ip in source_ips if self.is_suspicious_ip(ip)],
+                    "high_frequency_events": [evt for evt in event_types if 'block' in evt.lower() or 'deny' in evt.lower()]
+                },
+                "mitre_mapping": list(attack_techniques),
+                "recommendations": [
+                    "Block suspicious source IPs",
+                    "Investigate high-frequency event sources",
+                    "Review MITRE ATT&CK techniques for defense gaps"
+                ]
+            },
+            
+            "incident_response": {
+                "incidents_requiring_action": critical_events + high_events,
+                "affected_systems": list(product_counts.keys()),
+                "timeline_analysis": {
+                    "total_events": len(timeline_data),
+                    "peak_activity": self.find_peak_activity(timeline_data),
+                    "event_clustering": "Multiple events detected in short timeframe" if total_events > 50 else "Isolated events"
+                },
+                "response_priorities": [
+                    f"Critical: {critical_events} events requiring immediate attention",
+                    f"High: {high_events} events requiring urgent review",
+                    f"Medium/Low: {total_events - critical_events - high_events} events for monitoring"
+                ],
+                "containment_suggestions": [
+                    "Isolate affected systems showing critical events",
+                    "Block malicious IPs at perimeter",
+                    "Enable enhanced monitoring on affected products"
+                ]
+            },
+            
+            "compliance_report": {
+                "total_events": total_events,
+                "security_controls_triggered": len(event_types),
+                "coverage_by_product": product_counts,
+                "audit_trail": {
+                    "events_logged": total_events,
+                    "retention_period": query_info.get('timeframe', 'Unknown'),
+                    "data_integrity": "Complete" if total_events > 0 else "No events found"
+                },
+                "regulatory_mapping": {
+                    "SOX": f"{critical_events + high_events} material security events",
+                    "GDPR": f"Data protection events: {len([r for r in records if 'data' in str(r).lower()])}",
+                    "HIPAA": f"Access control events: {len([r for r in records if 'access' in str(r).lower()])}",
+                    "PCI-DSS": f"Network security events: {len([r for r in records if 'network' in str(r).lower()])}"
+                },
+                "compliance_score": max(0, 100 - (critical_events * 5) - (high_events * 2))
+            },
+            
+            "visualization_suggestions": [
+                {
+                    "type": "risk_heatmap",
+                    "title": "Security Risk Heatmap by Product and Severity",
+                    "data_source": "severity_distribution + product_counts"
+                },
+                {
+                    "type": "timeline_chart", 
+                    "title": "Security Events Timeline",
+                    "data_source": "timeline_data"
+                },
+                {
+                    "type": "network_diagram",
+                    "title": "Source IP to Destination IP Flow",
+                    "data_source": "source_ips + dest_ips"
+                },
+                {
+                    "type": "mitre_attack_matrix",
+                    "title": "MITRE ATT&CK Technique Coverage",
+                    "data_source": "attack_techniques"
+                }
+            ],
+            
+            "report_prompts": {
+                "executive": "Create an executive security dashboard showing risk levels, key metrics, and business impact from these security events.",
+                "technical": "Generate a detailed technical analysis including attack vectors, IOCs, and specific remediation steps.",
+                "compliance": "Produce a compliance report mapping these events to regulatory requirements and control effectiveness.",
+                "incident": "Create an incident response playbook based on the detected security events and their severity."
             }
         }
+        
+        return report_metadata
+    
+    def is_suspicious_ip(self, ip: str) -> bool:
+        """Basic suspicious IP detection (can be enhanced with threat intel)."""
+        if not ip or ip == "0.0.0.0":
+            return False
+        
+        # Basic patterns for suspicious IPs
+        suspicious_patterns = [
+            # Private ranges being used externally (simplified check)
+            # Known malicious ranges (example - would use real threat intel)
+        ]
+        
+        # Check for non-RFC1918 IPs (simplified)
+        parts = ip.split('.')
+        if len(parts) == 4:
+            try:
+                first_octet = int(parts[0])
+                # Very basic check - in real implementation would use threat intel feeds
+                return first_octet in [1, 2, 5, 14, 23, 27, 31, 37, 42, 46, 49, 50]  # Example suspicious ranges
+            except ValueError:
+                return False
+        return False
+    
+    def find_peak_activity(self, timeline_data: List[Dict]) -> str:
+        """Find peak activity periods in timeline data."""
+        if not timeline_data:
+            return "No timeline data available"
+        
+        # Simple peak detection - count events per hour
+        hour_counts = {}
+        for event in timeline_data:
+            timestamp = event.get('timestamp', '')
+            if timestamp:
+                # Extract hour from timestamp (simplified)
+                hour = timestamp.split('T')[1][:2] if 'T' in timestamp else '00'
+                hour_counts[hour] = hour_counts.get(hour, 0) + 1
+        
+        if hour_counts:
+            peak_hour = max(hour_counts, key=hour_counts.get)
+            peak_count = hour_counts[peak_hour]
+            return f"Peak activity at {peak_hour}:00 UTC ({peak_count} events)"
+        
+        return "No clear peak detected"
 
     async def handle_request(self, request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Handle incoming MCP requests."""
@@ -378,6 +595,9 @@ class InfinityEventsMCPServer:
         
         try:
             if method == "initialize":
+                # Include credential status in initialization response
+                creds_status = "✅ Configured" if self.client_id and self.access_key else "❌ Missing"
+                
                 return {
                     "jsonrpc": "2.0",
                     "id": request_id,
@@ -386,7 +606,8 @@ class InfinityEventsMCPServer:
                         "capabilities": {"tools": {}},
                         "serverInfo": {
                             "name": self.name,
-                            "version": "1.0.0"
+                            "version": "1.0.0",
+                            "description": f"Check Point Infinity Events API integration. Credentials: {creds_status}. Endpoint: {self.base_url}"
                         }
                     }
                 }
@@ -399,7 +620,7 @@ class InfinityEventsMCPServer:
                         "tools": [
                             {
                                 "name": "search_infinity_events",
-                                "description": "Search Check Point Infinity Events logs with natural language queries",
+                                "description": "Search Check Point Infinity Events logs with natural language queries. Credentials loaded from environment variables.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {
@@ -409,19 +630,8 @@ class InfinityEventsMCPServer:
                                         },
                                         "timeframe": {
                                             "type": "string",
-                                            "description": "Time period (e.g., 'last 24 hours', '7 days', '1 week')"
-                                        },
-                                        "base_url": {
-                                            "type": "string",
-                                            "description": "API base URL (e.g., https://cloudinfra-gw.portal.checkpoint.com, https://cloudinfra-gw.in.portal.checkpoint.com)"
-                                        },
-                                        "client_id": {
-                                            "type": "string",
-                                            "description": "API Client ID"
-                                        },
-                                        "access_key": {
-                                            "type": "string",
-                                            "description": "API Access Key"
+                                            "description": "Time period (e.g., 'last 24 hours', '7 days', '1 week')",
+                                            "default": "last 24 hours"
                                         },
                                         "accounts": {
                                             "type": "array",
@@ -430,10 +640,20 @@ class InfinityEventsMCPServer:
                                         },
                                         "save_locally": {
                                             "type": "boolean",
-                                            "description": "Save results to local file (default: false)"
+                                            "description": "Save results to local file (default: false)",
+                                            "default": False
                                         }
                                     },
-                                    "required": ["query", "timeframe", "base_url", "client_id", "access_key"]
+                                    "required": ["query"]
+                                }
+                            },
+                            {
+                                "name": "check_credentials",
+                                "description": "Check the status of API credentials and connection",
+                                "inputSchema": {
+                                    "type": "object",
+                                    "properties": {},
+                                    "required": []
                                 }
                             }
                         ]
@@ -448,9 +668,6 @@ class InfinityEventsMCPServer:
                     result = await self.get_all_logs(
                         query=arguments.get("query", ""),
                         timeframe_text=arguments.get("timeframe", "last 24 hours"),
-                        base_url=arguments.get("base_url", ""),
-                        client_id=arguments.get("client_id", ""),
-                        access_key=arguments.get("access_key", ""),
                         accounts=arguments.get("accounts"),
                         save_locally=arguments.get("save_locally", False)
                     )
@@ -463,6 +680,30 @@ class InfinityEventsMCPServer:
                                 {
                                     "type": "text",
                                     "text": json.dumps(result, indent=2)
+                                }
+                            ]
+                        }
+                    }
+                
+                elif tool_name == "check_credentials":
+                    # Test authentication
+                    auth_result = await self.authenticate()
+                    
+                    status = {
+                        "client_id_configured": bool(self.client_id),
+                        "access_key_configured": bool(self.access_key),
+                        "base_url": self.base_url,
+                        "authentication_test": auth_result
+                    }
+                    
+                    return {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "result": {
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": json.dumps(status, indent=2)
                                 }
                             ]
                         }
