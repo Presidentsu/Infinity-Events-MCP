@@ -47,7 +47,7 @@ pip install -r requirements.txt
 
 3. Configure Claude Desktop by adding to your `claude_desktop_config.json`:
 
-**Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
@@ -60,6 +60,8 @@ pip install -r requirements.txt
   }
 }
 ```
+- For windows path something similar to "args": ["C:\\Path\\to\\File\\infinity_mcp.py"]
+
 
 ## Usage
 
