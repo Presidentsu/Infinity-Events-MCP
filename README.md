@@ -1,16 +1,19 @@
 # Infinity Events MCP Server
 
-A Model Context Protocol (MCP) server that integrates Check Point Infinity Events API with Claude/Cursor Desktop (MCP client, enabling natural language queries for security event logs analysis and creating custom reports.
+A Model Context Protocol (MCP) server that integrates Check Point Infinity Events API with Claude/Cursor Desktop (MCP client, enabling natural language queries for security event logs analysis and creating custom and out-of-box reports.
 
 ## Features
 
-- 🔍 **Natural Language Queries**: Search logs using plain English (e.g., "Show critical events on Harmony SASE")
-- 🌍 **Multi-Region Support**: Works with EU-US and regional endpoints (.in.portal.checkpoint.com)
-- 📊 **AI-Powered Analysis**: Stream results directly to Claude for interactive reports and visualizations
+- 🔍 **Natural Language Queries**: Search logs using plain English (e.g., "Show all security events on Harmony SASE")
+- 🌍 **Multi-Region Support**: Works with global and regional endpoints (.in.portal.checkpoint.com)
+- 🛡️ **Secure Credential Management**: API keys stored safely in MCP configuration, never exposed in chat
+- 📊 **Automated Report Generation**: Generates executive dashboards, threat intelligence, incident response, and compliance reports
+- 📈 **Interactive Visualizations**: Claude creates charts, heatmaps, and network diagrams from log data
 - 💾 **Flexible Output**: Save locally or stream to Claude for analysis
 - 🔄 **Smart Pagination**: Handles large datasets with automatic pagination (pageLimit=100)
 - ⚡ **Rate Limit Handling**: Graceful handling of API rate limits with user notifications
-- 🛡️ **Comprehensive Error Handling**: Robust error handling for production use
+- 🎯 **MITRE ATT&CK Mapping**: Automatic technique identification and mapping
+- 📋 **Compliance Ready**: SOX, GDPR, HIPAA, PCI-DSS regulatory mapping
 
 ## Supported Check Point Products
 
@@ -55,13 +58,21 @@ pip install -r requirements.txt
   "mcpServers": {
     "infinity-events": {
       "command": "python",
-      "args": ["path/to/infinity_mcp.py"]
+      "args": ["path/to/infinity_events_mcp_server.py"],
+      "env": {
+        "CHECKPOINT_CLIENT_ID": "your_client_id_here",
+        "CHECKPOINT_ACCESS_KEY": "your_access_key_here",
+        "CHECKPOINT_BASE_URL": "https://cloudinfra-gw.portal.checkpoint.com"
+      }
     }
   }
 }
 ```
-- For windows path something similar to "args": ["C:\\Path\\to\\File\\infinity_mcp.py"]
 
+- For windows path something similar to "args": ["C:\\Path\\to\\File\\infinity_mcp.py"]
+- Fill "Your_client_id_here" & "your_access_key_here" with clientID & access Keys
+
+**Security Note**: Credentials are loaded from environment variables and never exposed in chat conversations.
 
 ## Usage
 
@@ -69,7 +80,7 @@ pip install -r requirements.txt
 
 1. **Security Events by Severity**:
    ```
-   Query: "Show me critical security events on Harmony SASE"
+   Query: "Show me all the critical security events"
    Timeframe: "last 24 hours"
    ```
 
@@ -89,17 +100,45 @@ pip install -r requirements.txt
 
 - **query**: Natural language description of what you're looking for
 - **timeframe**: Time period (e.g., "last 24 hours", "7 days", "1 week")
-- **base_url**: API endpoint URL
-  - Global: `https://cloudinfra-gw.portal.checkpoint.com`
-  - India: `https://cloudinfra-gw.in.portal.checkpoint.com`
-  - Australia: `https://cloudinfra-gw.ap.portal.checkpoint.com`
-- **client_id**: Your API Client ID
-- **access_key**: Your API Access Key
 
 ### Optional Parameters
 
 - **accounts**: Array of account IDs to filter (optional)
 - **save_locally**: Boolean to save results to local JSON file (default: false)
+
+## Automated Report Generation
+
+The server automatically analyzes log data and provides metadata for Claude to generate professional cybersecurity reports:
+
+### 📊 **Executive Dashboard**
+- Risk scoring and severity distribution
+- Timeline analysis with peak activity detection  
+- Top affected products and systems
+- Business impact assessment
+
+### 🎯 **Threat Intelligence Report**
+- IOC extraction (suspicious IPs, domains)
+- MITRE ATT&CK technique mapping
+- Attack pattern identification
+- Geolocation and attribution analysis
+
+### 🚨 **Incident Response Playbook**
+- Event correlation and kill chain analysis
+- Priority classification and response timelines
+- Affected asset identification
+- Containment and remediation recommendations
+
+### 📋 **Compliance Report**
+- Regulatory mapping (SOX, GDPR, HIPAA, PCI-DSS)
+- Audit trail completeness assessment
+- Control effectiveness scoring
+- Coverage metrics per product
+
+### 📈 **Interactive Visualizations**
+- Risk heatmaps by product and severity
+- Network flow diagrams
+- Timeline charts with event clustering
+- MITRE ATT&CK matrix coverage
 
 #### Real world Example that works
 - Provide me all the critical security events from Harmony SASE in the last 24 hrs.
@@ -119,7 +158,7 @@ The server automatically parses natural language queries and converts them to ap
 ### App Name Detection
 - "Harmony SASE" → `ci_app_name:"harmony sase"`
 - "Harmony Endpoint" → `ci_app_name:"harmony endpoint"`
-- "Quantum Smart-1 Cloud" → `ci_app_name:"quantum smart-1 cloud"`
+- "all products or no app name specified" → * (No product filter applied)
 
 ### Severity Filtering
 - "critical events" → `severity:"Critical"`
@@ -201,9 +240,10 @@ The server automatically handles these limits and notifies users when limits are
 
 ## Security Considerations
 
-- API credentials are passed as parameters during the initial prompt to Claude/Cursor and not part of the configuration.
+- API credentials are passed as parameters and not stored
+- Authentication tokens expire after 30 minutes for security
 - All API communications use HTTPS
-- Local file saves are optional and controlled by user
+- Local file saves are optional and controlled by user.
 
 ## Support
 
